@@ -228,7 +228,13 @@ public class SynchronizedQueue {
             // interesting results will occur if you start the
             // consumer first.
             // ALM - DONE
-            // ALM - Convenience boolean provided to change start order of threads
+            // ALM - Convenience boolean provided to change start order of threads.
+            // I believe the "interesting" results referred to here are that the
+            // consumer thread will have to block on its mQueue.take() method call in
+            // the consumer runnable while it waits for the producer runnable thread
+            // to insert consumables into the queue. These subtleties are indiscernible
+            // to the naked eye at runtime, however, and would require other debugging
+            // techniques like print logging to make sense of what's going on.
             boolean bStartConsumerFirst = true;
             if(bStartConsumerFirst)
             {
@@ -246,11 +252,13 @@ public class SynchronizedQueue {
             Thread.sleep(100);
 
             // TODO - you fill in here to interrupt the threads.
+            // ALM - DONE
             consumer.interrupt();
             producer.interrupt();
 
             // TODO - you fill in here to wait for the threads to
             // exit.
+            // ALM - DONE
             consumer.join();
             producer.join();
             
