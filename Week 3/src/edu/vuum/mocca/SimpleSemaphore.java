@@ -17,7 +17,7 @@ public class SimpleSemaphore {
      * Define a ReentrantLock to protect the critical section.
      */
     // TODO - you fill in here
-	// ALM - CHECK
+	// ALM - DONE
 	ReentrantLock mLock;
 
     /**
@@ -25,7 +25,7 @@ public class SimpleSemaphore {
      * permits is 0.
      */
     // TODO - you fill in here
-	// ALM - CHECK
+	// ALM - DONE
 	Condition mPermitsAvailable; 
 
     /**
@@ -42,7 +42,7 @@ public class SimpleSemaphore {
                             boolean fair)
     { 
         // TODO - you fill in here
-    	// ALM - CHECK
+    	// ALM - DONE
     	mAvailablePermits = permits;
     	mLock = new ReentrantLock(fair);
     	mPermitsAvailable = mLock.newCondition();
@@ -54,15 +54,20 @@ public class SimpleSemaphore {
      */
     public void acquire() throws InterruptedException {
         // TODO - you fill in here
-    	// ALM - CHECK
-    	final ReentrantLock lock = mLock;
-    	lock.lockInterruptibly();
+    	// ALM - DONE
+    	final Lock lock = mLock;
     	
     	try
     	{
+    		lock.lockInterruptibly();
     		while(mAvailablePermits == 0)
     			mPermitsAvailable.await();
-    		--mAvailablePermits;
+    		
+    		// ALM - There may be other threads waiting to acquire
+    		// but we should only wake them if there are any
+    		// remaining permits. Otherwise, let them wait longer.
+    		if(--mAvailablePermits > 0)
+    			mPermitsAvailable.signal();
     	}
     	finally
     	{
@@ -76,15 +81,26 @@ public class SimpleSemaphore {
      */
     public void acquireUninterruptibly() {
         // TODO - you fill in here
-    	// ALM - CHECK
-    	final ReentrantLock lock = mLock;
-    	lock.lock();
+    	// ALM - DONE
+    	final Lock lock = mLock;
     	
-		while(mAvailablePermits == 0)
-			mPermitsAvailable.awaitUninterruptibly();
-		--mAvailablePermits;
-		
-		lock.unlock();
+    	try
+    	{
+	    	lock.lock();
+	    	
+			while(mAvailablePermits == 0)
+				mPermitsAvailable.awaitUninterruptibly();
+			
+			// ALM - There may be other threads waiting to acquire
+    		// but we should only wake them if there are any
+    		// remaining permits. Otherwise, let them wait longer.
+    		if(--mAvailablePermits > 0)
+    			mPermitsAvailable.signal();
+    	}
+    	finally
+    	{
+    		lock.unlock();
+    	}
     }
 
     /**
@@ -92,12 +108,30 @@ public class SimpleSemaphore {
      */
     void release() {
         // TODO - you fill in here
-    	// ALM - CHECK
-    	final ReentrantLock lock = mLock;
-    	lock.lock();
-    	mAvailablePermits++;
-    	mPermitsAvailable.signal();
-    	lock.unlock();
+    	// ALM - DONE
+    	final Lock lock = mLock;
+    	
+    	try
+    	{
+	    	lock.lock();
+	    	mAvailablePermits++;
+	    	
+	    	// ALM - Choosing signal() over signalAll() here since
+	    	// only one of possibly many waiting threads who are
+	    	// looking to acquire can access the semaphore at a time.
+	    	// Zero, some, or all of the rest of the threads may then
+	    	// have to wait for the lock and have to re-check the
+	    	// condition again and go back to sleep if there aren't
+	    	// enough permits for all of them. That's potentially
+	    	// unnecessary thrashing, so simply keep signaling in
+	    	// acquire and acquireUninterruptibly if there are any
+	    	// remaining permits after acquiring.
+	    	mPermitsAvailable.signal();
+    	}
+    	finally
+    	{
+    		lock.unlock();
+    	}
     }
     
     /**
@@ -105,15 +139,18 @@ public class SimpleSemaphore {
      */
     public int availablePermits(){
     	// TODO - you fill in here
-    	// ALM - CHECK
-    	int iRet;
+    	// ALM - DONE
+    	final Lock lock = mLock;
     	
-    	final ReentrantLock lock = mLock;
-    	lock.lock();
-    	iRet = mAvailablePermits;
-    	lock.unlock();
-    	
-    	return iRet; // You will change this value. 
+    	try
+    	{
+	    	lock.lock();
+	    	return mAvailablePermits;
+    	}
+    	finally
+    	{
+    		lock.unlock();
+    	}
     }
 }
 
