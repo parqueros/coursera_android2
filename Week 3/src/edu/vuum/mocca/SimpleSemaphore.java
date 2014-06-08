@@ -62,12 +62,7 @@ public class SimpleSemaphore {
     		lock.lockInterruptibly();
     		while(mAvailablePermits == 0)
     			mPermitsAvailable.await();
-    		
-    		// ALM - There may be other threads waiting to acquire
-    		// but we should only wake them if there are any
-    		// remaining permits. Otherwise, let them wait longer.
-    		if(--mAvailablePermits > 0)
-    			mPermitsAvailable.signal();
+    		--mAvailablePermits;
     	}
     	finally
     	{
@@ -90,12 +85,7 @@ public class SimpleSemaphore {
 	    	
 			while(mAvailablePermits == 0)
 				mPermitsAvailable.awaitUninterruptibly();
-			
-			// ALM - There may be other threads waiting to acquire
-    		// but we should only wake them if there are any
-    		// remaining permits. Otherwise, let them wait longer.
-    		if(--mAvailablePermits > 0)
-    			mPermitsAvailable.signal();
+    		--mAvailablePermits;
     	}
     	finally
     	{
@@ -120,12 +110,10 @@ public class SimpleSemaphore {
 	    	// only one of possibly many waiting threads who are
 	    	// looking to acquire can access the semaphore at a time.
 	    	// Zero, some, or all of the rest of the threads may then
-	    	// have to wait for the lock and have to re-check the
-	    	// condition again and go back to sleep if there aren't
-	    	// enough permits for all of them. That's potentially
-	    	// unnecessary thrashing, so simply keep signaling in
-	    	// acquire and acquireUninterruptibly if there are any
-	    	// remaining permits after acquiring.
+	    	// have to wait for the lock  in order to wake up only to
+	    	// have to re-check the condition and go back to sleep if
+	    	// there aren't enough permits for all of them. That's
+	    	// unnecessary thrashing.
 	    	mPermitsAvailable.signal();
     	}
     	finally
